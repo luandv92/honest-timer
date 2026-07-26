@@ -1,0 +1,44 @@
+{
+  "name": "honest-timer",
+  "version": "1.0.0",
+  "description": "A scarcity countdown widget that doesn't lie: real localStorage-backed deadline, real price change on expiry, ~5 lines of core logic you can audit yourself.",
+  "type": "module",
+  "main": "src/honest-timer.js",
+  "module": "src/honest-timer.js",
+  "exports": "./src/honest-timer.js",
+  "files": [
+    "src",
+    "demo.html",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node tests/test.js"
+  },
+  "keywords": [
+    "countdown",
+    "timer",
+    "scarcity",
+    "urgency",
+    "cro",
+    "conversion",
+    "localstorage",
+    "vanilla-js",
+    "no-dependencies"
+  ],
+  "license": "MIT",
+  "author": "Luan Ribeiro de Brito",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/luandv92/honest-timer.git"
+  },
+  "homepage": "https://github.com/luandv92/honest-timer#readme",
+  "bugs": {
+    "url": "https://github.com/luandv92/honest-timer/issues"
+  },
+  "engines": {
+    "node": ">=14"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

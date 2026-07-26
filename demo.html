@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>honest-timer — demo</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    max-width: 640px;
+    margin: 40px auto;
+    padding: 0 20px;
+    line-height: 1.5;
+  }
+  h1 { font-size: 1.4rem; }
+  .card {
+    border: 1px solid #8884;
+    border-radius: 14px;
+    padding: 20px 22px;
+    margin: 20px 0;
+  }
+  .countdown {
+    font-variant-numeric: tabular-nums;
+    font-weight: 800;
+    font-size: 1.6rem;
+  }
+  .price { font-size: 1.8rem; font-weight: 800; }
+  .price-old { text-decoration: line-through; opacity: .6; font-weight: 400; font-size: 1.1rem; }
+  button {
+    padding: 10px 16px;
+    border-radius: 10px;
+    border: 1px solid #8884;
+    background: transparent;
+    cursor: pointer;
+    font-size: .9rem;
+  }
+  code, pre { background: #8882; border-radius: 6px; padding: .1em .4em; }
+  pre { padding: 12px; overflow-x: auto; }
+  .note { font-size: .85rem; opacity: .75; }
+</style>
+</head>
+<body>
+
+<h1>honest-timer — live demo</h1>
+<p>
+  This page is a single, self-contained HTML file: open it directly from disk
+  (double-click, no server) and the countdown below still works. Reload the
+  page a few times — the deadline does not move.
+</p>
+
+<div class="card">
+  <p>Launch-week pricing for <strong>Product X</strong> ends in:</p>
+  <div class="countdown" data-honest-timer data-honest-timer-key="demo-sale" data-honest-timer-minutes="2"></div>
+
+  <p data-honest-timer-before="demo-sale">
+    <span class="price" data-honest-timer-key="demo-sale" data-honest-timer-raise-to="$67">$47</span>
+    <span class="note">— price rises automatically when the timer hits zero</span>
+  </p>
+
+  <p data-honest-timer-after="demo-sale" style="display:none">
+    <span class="price-old">$47</span>
+    <span class="price">$67</span>
+    <span class="note">— launch-week pricing has ended</span>
+  </p>
+
+  <button id="reset-btn">Reset demo timer</button>
+  <p class="note">
+    (Set to 2 minutes here so you can see it expire quickly. In production
+    you'd use <code>data-honest-timer-minutes="2880"</code> for a 48h window,
+    for example.)
+  </p>
+</div>
+
+<h2>How this page is wired</h2>
+<pre><code>&lt;span data-honest-timer
+      data-honest-timer-key="demo-sale"
+      data-honest-timer-minutes="2"&gt;&lt;/span&gt;
+
+&lt;span data-honest-timer-before="demo-sale"&gt;$47&lt;/span&gt;
+&lt;span data-honest-timer-after="demo-sale" style="display:none"&gt;$67&lt;/span&gt;
+
+&lt;span data-honest-timer-key="demo-sale"
+      data-honest-timer-raise-to="$67"&gt;$47&lt;/span&gt;
+</code></pre>
+
+<p class="note">
+  Source: <a href="https://github.com/luandv92/honest-timer">github.com/luandv92/honest-timer</a>
+</p>
+
+<script type="module">
+  /* ---------------------------------------------------------------------
+   * This demo inlines the widget's logic directly (rather than importing
+   * ./src/honest-timer.js) so demo.html is a fully self-contained file:
+   * open it straight from disk and it still works, with no server and no
+   * build step. It mirrors src/honest-timer.js exactly — see that file
+   * for the documented, tested version this package actually ships.
+   * ------------------------------------------------------------------- */
+  const STORAGE_PREFIX = 'honest_timer_';
+
+  function safeStorage() {
+    try {
+      const k = '__honest_timer_test__';
+      window.localStorage.setItem(k, '1');
+      window.localStorage.removeItem(k);
+      return window.localStorage;
+    } catch (_e) {
+      const map = new Map();
+      return {
+        getItem: (key) => (map.has(key) ? map.get(key) : null),
+        setItem: (key, v) => map.set(key, String(v)),
+        removeItem: (key) => map.delete(key),
+      };
+    }
+  }
+
+  function getOrCreateDeadline(key, minutes, storage) {
+    const raw = storage.getItem(key);
+    const existing = raw ? parseInt(raw, 10) : 0;
+    if (existing) return existing;
+    const deadline = Date.now() + minutes * 60000;
+    storage.setItem(key, String(deadline));
+    return deadline;
+  }
+
+  function formatDuration(ms) {
+    const clamped = ms < 0 ? 0 : ms;
+    const totalSeconds = Math.floor(clamped / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    const pad = (n) => (n < 10 ? '0' : '') + n;
+    return (hours > 0 ? hours + ':' + pad(minutes) : pad(minutes)) + ':' + pad(seconds);
+  }
+
+  function applyDeclarativeState(root, key, isExpired) {
+    root.querySelectorAll('[data-honest-timer-before="' + key + '"]').forEach((el) => {
+      el.style.display = isExpired ? 'none' : '';
+    });
+    root.querySelectorAll('[data-honest-timer-after="' + key + '"]').forEach((el) => {
+      el.style.display = isExpired ? '' : 'none';
+    });
+    if (isExpired) {
+      root.querySelectorAll('[data-honest-timer-key="' + key + '"][data-honest-timer-raise-to]').forEach((el) => {
+        const newText = el.getAttribute('data-honest-timer-raise-to');
+        if (newText != null) el.textContent = newText;
+      });
+    }
+  }
+
+  function initTimer(el) {
+    const key = el.getAttribute('data-honest-timer-key');
+    const minutes = parseFloat(el.getAttribute('data-honest-timer-minutes') || '120');
+    const storage = safeStorage();
+    const storageKey = STORAGE_PREFIX + key;
+    const deadline = getOrCreateDeadline(storageKey, minutes, storage);
+    let expired = false;
+
+    function tick() {
+      const left = deadline - Date.now();
+      el.textContent = formatDuration(left);
+      if (left <= 0 && !expired) {
+        expired = true;
+        clearInterval(intervalId);
+        applyDeclarativeState(document, key, true);
+      }
+    }
+
+    applyDeclarativeState(document, key, deadline - Date.now() <= 0);
+    tick();
+    const intervalId = setInterval(tick, 1000);
+  }
+
+  document.querySelectorAll('[data-honest-timer]').forEach(initTimer);
+
+  document.getElementById('reset-btn').addEventListener('click', () => {
+    safeStorage().removeItem(STORAGE_PREFIX + 'demo-sale');
+    location.reload();
+  });
+</script>
+
+</body>
+</html>
