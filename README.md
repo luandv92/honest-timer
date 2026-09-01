@@ -22,8 +22,8 @@ distrust every countdown they see.
   window on your next visit. If you want a fresh sale, you say so explicitly
   (`resetHonestTimer`) — it is never an accidental side effect of a reload.
 - **Zero dependencies, no build step.** It's one file. Drop it in a
-  `<script type="module">` tag or `npm install` it. There's nothing to
-  bundle to make it work.
+  `<script type="module">` tag or pull it straight from the repo. There's
+  nothing to bundle to make it work.
 
 ## Why this is auditable
 
@@ -53,19 +53,25 @@ function yourself. That's the point of shipping something this small.
 
 ## Install
 
+Not published to npm. It's one file with zero dependencies and no build step,
+so the simplest install is to copy it:
+
 ```bash
-npm install honest-timer
+curl -O https://raw.githubusercontent.com/luandv92/honest-timer/master/src/honest-timer.js
+```
+
+```html
+<script type="module" src="./honest-timer.js"></script>
+```
+
+Or pull it straight from the repo if you'd rather have it in `package.json`:
+
+```bash
+npm install github:luandv92/honest-timer
 ```
 
 ```js
 import { createHonestTimer } from 'honest-timer';
-```
-
-Or skip npm entirely and use it as a plain script — no build step, no CDN
-account, no bundler:
-
-```html
-<script type="module" src="./honest-timer.js"></script>
 ```
 
 (`type="module"` is all modern browsers require; you don't need a bundler
